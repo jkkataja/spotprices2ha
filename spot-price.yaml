@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.2.3
+# Version 0.2.4
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -68,6 +68,24 @@ template:
         all_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) | map(attribute="TotalPrice") |list }}'
         today_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp) | map(attribute="TotalPrice") |list }}'
         tomorrow_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("23:59") | as_timestamp) | map(attribute="TotalPrice") |list }}'
+        today_min: '{{ this.attributes.today_prices | default([0]) | min }}'
+        today_avg: '{{ this.attributes.today_prices | default([0]) | average | round(4) }}'
+        today_max: '{{ this.attributes.today_prices | default([0]) | max }}'
+        tomorrow_min: '{{ this.attributes.tomorrow_prices | default([0], true) | min }}'
+        tomorrow_avg: '{{ this.attributes.tomorrow_prices | default([0], true) | average | round(4) }}'
+        tomorrow_max: '{{ this.attributes.tomorrow_prices | default([0], true) | max }}'
+  - sensor:
+    - name: SHF Electricity price taxless now
+      unique_id: shf_electricity_price_notax_now
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: '{{ (state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list)[-1]["PriceNoTax"] | round(4) }}'
+      availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", now() | as_timestamp ) | list | length > 0 }}'
+      attributes:
+        data: '{{ state_attr("sensor.shf_data", "data") }}'
+        all_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) | map(attribute="PriceNoTax") |list }}'
+        today_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp) | map(attribute="PriceNoTax") |list }}'
+        tomorrow_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("23:59") | as_timestamp) | map(attribute="PriceNoTax") |list }}'
         today_min: '{{ this.attributes.today_prices | default([0]) | min }}'
         today_avg: '{{ this.attributes.today_prices | default([0]) | average | round(4) }}'
         today_max: '{{ this.attributes.today_prices | default([0]) | max }}'
